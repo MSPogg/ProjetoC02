@@ -59,20 +59,15 @@ void CadastrarCarro(Carros carro[])
 
 void salvarCarros(Carros carros[])
 {
-    ofstream arqLeitura("carrosDisponiveis.txt", ofstream::out);
-
+    ofstream arqEscrita("carrosDisponiveis.txt");
     for (int i = 0; i < 50; i++)
     {
-        arqLeitura << carros[i].modelo << ";"
+        arqEscrita << carros[i].modelo << ";"
             << carros[i].placa << ";"
             << carros[i].precoDia << ";"
-            << (carros[i].disponivel ? "1" : "0");
-
-        if (arqLeitura.eof())
-            arqLeitura << endl;
+            << (carros[i].disponivel ? "1" : "0")
     }
-
-    arqLeitura.close();
+    arqEscrita.close();
 }
 
 // Funções Alugar e Devolver Carro (Murilo)
@@ -80,6 +75,7 @@ void atualizarDisponibilidade(Carros carro[], bool novoStatus)
 {
     string escolha;
     bool encontrado = false;
+	bool novoStatus;
 
     cout << "Modelo: ";
     getline(cin >> ws, escolha);
