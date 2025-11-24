@@ -3,163 +3,203 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
-#include <windows.h>
+#include <clocale>
 using namespace std;
- 
+
+// Menu
 void exibirMenu()
 {
-	cout << "              LOCACAO DE CARROS              " << endl;
-	cout << "1 | Alugar carro" << endl;
-	cout << "2 | Carros alugados" << endl;
-	cout << "2 | Devolver carro" << endl;
-	cout << "3 | Cadastrar carros" << endl;
-	cout << "4 | Sair" << endl;
-	cout << endl;
-	cout << "Escolha a opcao desejada" << endl;
+    string azul = "\033[34m";
+    string reset = "\033[0m";
+    
+    cout << azul << "              LOCAÇÃO DE CARROS              " << reset << endl << endl;
+    cout << azul << "1 - " << reset << "Alugar carro" << endl;
+    cout << azul << "2 - " << reset << "Devolver carro" << endl;
+    cout << azul << "3 - " << reset << "Cadastrar carro" << endl;
+    cout << azul << "4 - " << reset << "Sair" << endl;
+    cout << endl;
+    cout << "Escolha a opcao desejada: ";
 }
- 
-// Struct (Marcelo)
+
+// Struct
 struct Carros
 {
-	string modelo;
-	string placa;
-	float precoDia;
-	bool disponivel;
+    string modelo;
+    string placa;
+    float precoDia;
+    bool disponivel;
 };
- 
-void CadastrarCarro(Carros carro[])
+
+// Leitura do arquivo 
+int lerCarros(Carros carro[])
 {
-	int n;
-	cout << "Entre com a quantidade de carros a serem cadastrados: ";
-	cin >> n;
+    ifstream arq("carrosDisponiveis.txt");
+    if (!arq.is_open()) return 0;
 
-	for (int t = 0; t < n; t++)
-	{
-		cout << "Digite o modelo do carro: ";
-		getline(cin >> ws, carro[t].modelo);
-		arqEscrita << carro[t].modelo << ";";
+    int total = 0;
 
-		cout << "Digite a placa do carro: ";
-		getline(cin >> ws, carro[t].placa);
-		arqEscrita << carro[t].placa << ";";
-
-		cout << "Digite o valor do aluguel R$: ";
-		cin >> carro[t].precoDia;
-		arqEscrita << fixed << setprecision(2) << carro[t].precoDia << ";";
-
-		carro[t].disponivel = true;
-		arqEscrita << (carro[t].disponivel ? 1 : 0); // interrogação funciona como if ou else, ou seja, operador condicional, se for verdadeiro "disponivel" (True = 1) se for falso "indisponivel"(falso = 0)
-		arqEscrita << endl;
- 
-		cout << "carro cadastrado com sucesso" << endl;
-		
-		//Verificar manualmente (olhar o arquivo) se os carros estáo sendo cadastrados
-	}
-}
-
-void salvarCarros(Carros carros[])
-{
-    ofstream arqEscrita("carrosDisponiveis.txt");
-    for (int i = 0; i < 50; i++)
+    while (arq >> carro[total].modelo
+   	   	   	   >> carro[total].placa
+				>> carro[total].precoDia
+                >> carro[total].disponivel)
     {
-        arqEscrita << carros[i].modelo << ";"
-            << carros[i].placa << ";"
-            << carros[i].precoDia << ";"
-            << (carros[i].disponivel ? "1" : "0")
+        total++;
     }
-    arqEscrita.close();
+
+    return total;
 }
 
-// Funções Alugar e Devolver Carro (Murilo)
-void atualizarDisponibilidade(Carros carro[], bool novoStatus)
+// Salvar no arquivo
+void salvarCarros(Carros carros[], int total)
 {
+    ofstream arq("carrosDisponiveis.txt");
+
+    for (int i = 0; i < total; i++)
+    {
+        arq << carros[i].modelo << " "
+            << carros[i].placa << " "
+            << fixed << setprecision(2) << carros[i].precoDia << " "
+            << (carros[i].disponivel ? 1 : 0);
+
+        if (i < total - 1) arq << endl;
+    }
+}
+
+// Cadastro de carros
+void CadastrarCarro(Carros carro[], int &total)
+{
+	string verde = "\033[32m";
+	string reset = "\033[0m";
+	 
+    ofstream arq("carrosDisponiveis.txt", ios::app);
+    if (!arq.is_open()) {
+        cout << "Erro ao abrir arquivo!" << endl;
+        return;
+    }
+
+    int n;
+    cout << "Quantidade de carros para cadastrar: ";
+    cin >> n;
+
+    for (int i = 0; i < n; i++)
+    {
+        cout << "Modelo: ";
+        getline(cin >> ws, carro[total].modelo);
+
+        cout << "Placa: ";
+        getline(cin >> ws, carro[total].placa);
+
+        cout << "Preço por dia: ";
+        cin >> carro[total].precoDia;
+
+        carro[total].disponivel = true;
+
+        arq << carro[total].modelo << " "
+            << carro[total].placa << " "
+            << fixed << setprecision(2) << carro[total].precoDia << " 1\n";
+        total++;
+        cout << verde << "Carro cadastrado com sucesso!" << reset << endl << endl;
+    }
+
+    arq.close();
+}
+
+// Alugar ou devolver
+void atualizarDisponibilidade(Carros carro[], int total, bool novoStatus)
+{
+	string verde = "\033[32m";
+	string reset = "\033[0m";
     string escolha;
-    bool encontrado = false;
-	bool novoStatus;
-
-    cout << "Modelo: ";
+    cout << "Digite o modelo do carro: ";
     getline(cin >> ws, escolha);
+    cout << endl;
 
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < total; i++)
     {
         if (carro[i].modelo == escolha)
         {
-            encontrado = true;
-
-            if (novoStatus == false) // Aluga o carro
+            if (carro[i].disponivel == novoStatus)
             {
-                if (!carro[i].disponivel)
-                {
-                    cout << "Esse carro já está alugado." << endl;
-                    return;
-                }
-
-                carro[i].disponivel = false;
-                cout << "Carro alugado com sucesso!" << endl;
+                cout << (novoStatus ? "Esse carro já está disponível." : "Esse carro já está alugado.") << endl << endl;
+                return;
             }
-            else // Devolve o carro
-            {
-                if (carro[i].disponivel)
-                {
-                    cout << "Esse carro já está disponível!" << endl;
-                    return;
-                }
+            
+            if (novoStatus == true)
+			{
+			    int dias;
+			    cout << "Por quantos dias o carro foi utilizado? ";
+			    cin >> dias;
+			    cout << endl;
+			
+			    float totalPagar = dias * carro[i].precoDia;
+			
+			    cout << "Valor total a pagar: R$ " 
+			         << fixed << setprecision(2) << totalPagar << endl << endl;
+			    cin.ignore();
+			}
+			
+            carro[i].disponivel = novoStatus;
 
-                carro[i].disponivel = true;
-                cout << "Carro devolvido com sucesso!" << endl;
-            }
+            cout << verde << (novoStatus ? "Carro devolvido com sucesso!" : "Carro alugado com sucesso!") << reset << endl << endl;
 
-            salvarCarros(carro);
+            salvarCarros(carro, total);
             return;
         }
     }
 
-    if (!encontrado)
-        cout << "Modelo não encontrado!" << endl;
+    cout << "Modelo não encontrado!" << endl;
 }
 
+// Listar carros
+void listarCarros(Carros carro[], int total)
+{
+    cout << "              CARROS CADASTRADOS              " << endl << endl;
+    
+    for (int i = 0; i < total; i++)
+    {
+        cout << carro[i].modelo << " | " << carro[i].placa << " | R$ " << carro[i].precoDia << " | " 
+		<< (carro[i].disponivel ? "Disponível" : "Alugado")<< endl;
+    }
+    
+    cout << endl;
+}
 
-// Função Listar Carro (Wendel)
- 
 // Main
 int main()
 {
-	SetConsoleOutputCP(CP_UTF8); // Para saídas com acento
- 
-	int OpcaoDeEscolhaNoMenu = 0;
-	Carros carro[50];
-	ifstream arqLeitura;
-	ofstream arqEscrita;
-	string carrosDisponiveis;
- 
-	exibirMenu();
- 
-	while (true)
-	{
-		cin >> OpcaoDeEscolhaNoMenu;
- 
-		switch (OpcaoDeEscolhaNoMenu)
-		{
-		case 1: // Alugar carros
-			arqLeitura.open ("carrosDisponiveis.txt");
-			//Listar carros
-			atualizarDisponibilidade(carro, false);
-			arqLeitura.close();
-			break;
-		case 2: //Devolver carros
-			arqLeitura.open ("carrosDisponiveis.txt");
-			//Listar carros
-			atualizarDisponibilidade(carro, true);
-			arqLeitura.close();
-			break;
-		case 3: // Cadastrar carros
-			arqEscrita.open("carrosDisponiveis.txt");
-			CadastrarCarro(carro);
-			arqLeitura.close();
-			break;
-		case 4: // Sair
-			return 0;
-		}
-		exibirMenu();
-	}
+    setlocale(LC_ALL, "Portuguese");
+
+    Carros carro[50];
+    int total = lerCarros(carro);
+    int opcao;
+
+    while (true)
+    {
+        exibirMenu();
+        cin >> opcao;
+        cout << endl;
+        cin.ignore();
+
+        switch (opcao)
+        {
+        case 1:
+        	listarCarros(carro, total);
+            atualizarDisponibilidade(carro, total, false);
+            break;
+
+        case 2:
+            atualizarDisponibilidade(carro, total, true);
+            break;
+
+        case 3:
+            CadastrarCarro(carro, total);
+            break;
+
+        case 4:
+            return 0;
+
+        default:
+            cout << "Opção inválida!" << endl;
+        }
+    }
 }
